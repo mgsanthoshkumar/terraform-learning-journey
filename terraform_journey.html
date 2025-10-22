@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terraform Provisioning Case Study</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: "Slate & Amber" - A modern, professional palette with slate grays for the background, white/light gray for text, and a warm amber for accents and interactive elements. -->
+    <!-- Application Structure Plan: The SPA is designed as an interactive journey, not a static report. It uses a top navigation bar to switch between four thematic sections: an overview, a visual timeline of the troubleshooting process, a showcase of the successful local deployment, and a side-by-side comparison of future AWS strategies. This structure allows users to explore the content non-linearly, focusing on the parts most relevant to them. The troubleshooting timeline is the core interactive element, turning a list of errors into an engaging, step-by-step learning path. This design was chosen to prioritize user understanding and engagement over simply replicating the report's linear format. -->
+    <!-- Visualization & Content Choices: 
+        - Project Goal -> Text Block -> Inform -> Simple introductory text.
+        - Troubleshooting Log -> Interactive Vertical Timeline -> Organize & Inform -> A timeline is more effective than a table for showing a chronological sequence of challenges and solutions. Each step is clickable to reveal details, making the learning process interactive. A chart was not used as the data is narrative, not quantitative. Implemented with HTML/CSS and JS.
+        - Final Terraform Code -> Code Block with Copy Button -> Inform & Utility -> Presents the final successful code clearly, with a utility to copy it for reuse. Implemented with HTML and JS.
+        - Final Workflow -> HTML Table -> Organize -> A table is the clearest way to present the final sequence of successful commands and their outcomes.
+        - AWS Future Path -> Two-Column Card Comparison -> Compare -> A side-by-side layout is ideal for comparing the two AWS approaches (IaaS vs. PaaS). It highlights the key differences in control, security, and management. Implemented with Tailwind CSS Grid.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 11px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #475569; /* slate-600 */
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 0;
+            top: 0;
+            height: 24px;
+            width: 24px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-width: 2px;
+        }
+        .details-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.5s ease-in-out;
+        }
+        .details-content.open {
+            max-height: 500px;
+        }
+        .nav-button.active {
+            background-color: #d97706; /* amber-600 */
+            color: white;
+        }
+        .code-block {
+            background-color: #1e293b;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300">
+
+    <div class="container mx-auto p-4 md:p-8">
+        
+        <header class="text-center mb-8">
+            <h1 class="text-4xl md:text-5xl font-bold text-white">Terraform Provisioning Case Study</h1>
+            <p class="mt-2 text-lg text-slate-400">An Interactive Journey from Local Setup to Cloud Deployment</p>
+        </header>
+
+        <nav class="flex justify-center flex-wrap gap-2 md:gap-4 mb-8">
+            <button class="nav-button active font-semibold py-2 px-4 rounded-full transition-all duration-300 bg-slate-700 hover:bg-amber-600" data-target="overview">Overview</button>
+            <button class="nav-button font-semibold py-2 px-4 rounded-full transition-all duration-300 bg-slate-700 hover:bg-amber-600" data-target="journey">The Journey</button>
+            <button class="nav-button font-semibold py-2 px-4 rounded-full transition-all duration-300 bg-slate-700 hover:bg-amber-600" data-target="success">Local Success</button>
+            <button class="nav-button font-semibold py-2 px-4 rounded-full transition-all duration-300 bg-slate-700 hover:bg-amber-600" data-target="future">Path to AWS</button>
+        </nav>
+
+        <main>
+            <section id="overview" class="page-content">
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-white mb-4">Project Goal</h2>
+                    <p class="text-slate-400 leading-relaxed">This case study documents the process of learning and implementing **Automated Infrastructure Provisioning** using Terraform. The primary goal was to achieve a **consistent** and **compliant** service onboarding workflow, starting with a local development environment (CentOS Stream 9 with Podman) and outlining a clear path toward a production-ready AWS deployment.</p>
+                    <p class="text-slate-400 leading-relaxed mt-4">The application you are viewing transforms the original static report into an interactive experience, highlighting the key challenges, solutions, and outcomes of this learning journey.</p>
+                </div>
+            </section>
+            
+            <section id="journey" class="page-content hidden">
+                 <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-white mb-6">Troubleshooting Journey: A Step-by-Step Log</h2>
+                    <p class="mb-8 text-slate-400">Every learning process involves hurdles. This section visualizes the key challenges encountered and the solutions that were implemented to overcome them. Click on each step to see the details.</p>
+                    <div class="relative pl-8">
+                        <!-- Timeline Item 1 -->
+                        <div class="timeline-item mb-8">
+                            <div class="timeline-dot bg-red-900 border-red-500"><span class="text-red-300 font-bold">!</span></div>
+                            <div class="ml-4">
+                                <button class="details-toggle w-full text-left">
+                                    <h3 class="text-lg font-semibold text-white">Challenge: 'apt: command not found'</h3>
+                                    <time class="text-sm text-slate-500">Initial Tool Installation</time>
+                                </button>
+                                <div class="details-content">
+                                    <div class="mt-2 p-4 bg-slate-900 rounded-md">
+                                        <p><strong>Cause:</strong> Attempted to use `apt`, a package manager for Debian/Ubuntu, on a system identified as CentOS Stream 9.</p>
+                                        <p class="mt-2"><strong>Solution:</strong> Switched to `dnf`, the correct package manager for the Red Hat family of Linux distributions, to successfully install Terraform and other required tools.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Timeline Item 2 -->
+                         <div class="timeline-item mb-8">
+                            <div class="timeline-dot bg-red-900 border-red-500"><span class="text-red-300 font-bold">!</span></div>
+                            <div class="ml-4">
+                                <button class="details-toggle w-full text-left">
+                                    <h3 class="text-lg font-semibold text-white">Challenge: 'No valid credential sources found'</h3>
+                                    <time class="text-sm text-slate-500">AWS Connectivity</time>
+                                </button>
+                                <div class="details-content">
+                                    <div class="mt-2 p-4 bg-slate-900 rounded-md">
+                                        <p><strong>Cause:</strong> Terraform could not authenticate with AWS. This was due to a combination of the AWS CLI not being installed and a network issue (`ERR_NAME_NOT_RESOLVED`) blocking the SSO browser authentication.</p>
+                                        <p class="mt-2"><strong>Solution:</strong> The project pivoted to a local deployment using Docker/Podman to unblock the learning process and validate the Terraform workflow without requiring cloud credentials.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Timeline Item 3 -->
+                        <div class="timeline-item mb-8">
+                            <div class="timeline-dot bg-red-900 border-red-500"><span class="text-red-300 font-bold">!</span></div>
+                            <div class="ml-4">
+                                <button class="details-toggle w-full text-left">
+                                    <h3 class="text-lg font-semibold text-white">Challenge: Docker Installation Conflict</h3>
+                                    <time class="text-sm text-slate-500">Local Container Setup</time>
+                                </button>
+                                <div class="details-content">
+                                    <div class="mt-2 p-4 bg-slate-900 rounded-md">
+                                        <p><strong>Cause:</strong> The system's default container engine, Podman, provided a `podman-docker` compatibility package that conflicted with the official Docker CE installation.</p>
+                                        <p class="mt-2"><strong>Solution:</strong> Avoided a disruptive re-installation by configuring Terraform to use the existing Podman engine. This was done by setting the `DOCKER_HOST` environment variable to point to the Podman socket.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                         <!-- Timeline Item 4 -->
+                        <div class="timeline-item mb-8">
+                            <div class="timeline-dot bg-red-900 border-red-500"><span class="text-red-300 font-bold">!</span></div>
+                            <div class="ml-4">
+                                <button class="details-toggle w-full text-left">
+                                    <h3 class="text-lg font-semibold text-white">Challenge: Podman Permission Error</h3>
+                                    <time class="text-sm text-slate-500">Image Pull</time>
+                                </button>
+                                <div class="details-content">
+                                    <div class="mt-2 p-4 bg-slate-900 rounded-md">
+                                        <p><strong>Cause:</strong> The non-root user (`hr265`) lacked the necessary subordinate UID/GID ranges required by Podman's security model to unpack container image layers.</p>
+                                        <p class="mt-2"><strong>Solution:</strong> Allocated the required ID ranges using `sudo usermod --add-subuids/subgids` and then ran `podman system migrate` to apply the changes.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Timeline Item 5 -->
+                        <div class="timeline-item">
+                            <div class="timeline-dot bg-green-900 border-green-500"><span class="text-green-300">✓</span></div>
+                             <div class="ml-4">
+                                <button class="details-toggle w-full text-left">
+                                    <h3 class="text-lg font-semibold text-white">Resolution: Persistent Port Conflict</h3>
+                                    <time class="text-sm text-slate-500">Final Deployment</time>
+                                </button>
+                                <div class="details-content">
+                                    <div class="mt-2 p-4 bg-slate-900 rounded-md">
+                                        <p><strong>Cause:</strong> Stale processes repeatedly occupied the target ports (8080, then 8081), causing `address already in use` errors.</p>
+                                        <p class="mt-2"><strong>Solution:</strong> The `main.tf` file was modified to use a free port (`8082`), demonstrating the flexibility of IaC to adapt to environmental constraints and leading to a successful deployment.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+            </section>
+            
+            <section id="success" class="page-content hidden">
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-white mb-4">Successful Local Implementation</h2>
+                    <p class="text-slate-400 mb-6">The culmination of the troubleshooting process was a successful, repeatable deployment of a compliant Nginx web server using Terraform and Podman. This section details the final code and workflow.</p>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div class="relative">
+                            <h3 class="text-xl font-semibold text-white mb-2">Final Terraform Code (`main.tf`)</h3>
+                             <button id="copy-button" class="absolute top-0 right-0 bg-slate-600 text-slate-300 text-xs font-semibold py-1 px-3 rounded-md hover:bg-amber-600 transition-colors">Copy</button>
+                            <pre class="code-block rounded-lg p-4 text-sm overflow-x-auto h-full"><code id="code-content" class="language-hcl"># Setup: Directs Terraform to use the Podman service via DOCKER_HOST environment variable
+terraform {
+  required_providers {
+    docker = {
+      source  = "kreuzwerker/docker"
+      version = "~> 3.0"
+    }
+  }
+}
+provider "docker" {}
+
+# Resources
+resource "docker_image" "nginx_image" {
+  name         = "nginx:latest"
+  keep_locally = true
+}
+
+resource "docker_container" "nginx_container" {
+  name  = "compliant-web-server"
+  image = docker_image.nginx_image.name
+  
+  # Network Consistency: Exposes internal 80 to external 8082
+  ports {
+    internal = 80
+    external = 8082
+  }
+  
+  # Compliance: Resource Labels (Tags)
+  labels {
+    label = "Environment"
+    value = "LocalDev"
+  }
+  labels {
+    label = "Owner"
+    value = "hr265"
+  }
+}
+</code></pre>
+                        </div>
+                        <div>
+                             <h3 class="text-xl font-semibold text-white mb-2">Final Workflow</h3>
+                             <div class="overflow-x-auto">
+                                <table class="min-w-full bg-slate-900 rounded-lg">
+                                    <thead class="bg-slate-700 text-white">
+                                        <tr>
+                                            <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Command</th>
+                                            <th class="text-left py-3 px-4 uppercase font-semibold text-sm">Status</th>
+                                            <th class="text-left py-3 px-4 uppercase font-semibold text-sm">IaC Principle</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-slate-400">
+                                        <tr>
+                                            <td class="py-3 px-4 border-b border-slate-700 font-mono text-sm">terraform init --upgrade</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Success</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Preparation</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-3 px-4 border-b border-slate-700 font-mono text-sm">terraform apply</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Success</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Provisioning</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="py-3 px-4 border-b border-slate-700 font-mono text-sm">docker ps</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Verification</td>
+                                            <td class="py-3 px-4 border-b border-slate-700">Operational Check</td>
+                                        </tr>
+                                         <tr>
+                                            <td class="py-3 px-4 font-mono text-sm">terraform destroy</td>
+                                            <td class="py-3 px-4">Success</td>
+                                            <td class="py-3 px-4">Lifecycle Management</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <section id="future" class="page-content hidden">
+                <div class="bg-slate-800 p-6 rounded-lg shadow-lg">
+                    <h2 class="text-2xl font-bold text-white mb-4">Future Path: Automated Provisioning on AWS</h2>
+                    <p class="text-slate-400 mb-8">The principles learned and validated locally are directly applicable to a cloud environment. The next step is to pivot the deployment to AWS. Below are two primary approaches for deploying the same containerized Nginx service in the cloud.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        
+                        <div class="bg-slate-900 p-6 rounded-lg">
+                            <h3 class="text-xl font-bold text-amber-500 mb-2">Approach 1: EC2 + UserData</h3>
+                            <p class="font-semibold text-white mb-4">IaaS (Infrastructure as a Service)</p>
+                            <p class="text-slate-400 mb-4">This method offers maximum control by provisioning a virtual machine (`aws_instance`) and using a startup script (`UserData`) to install Docker and run the container. It's ideal for scenarios requiring deep OS-level customization.</p>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex items-start"><span class="text-amber-500 mr-2 mt-1">●</span><div><strong class="text-white">Compute:</strong> Managed via an `aws_instance` resource. You are responsible for the OS, patching, and scaling.</div></div>
+                                <div class="flex items-start"><span class="text-amber-500 mr-2 mt-1">●</span><div><strong class="text-white">Security:</strong> Controlled by attaching an `aws_security_group` directly to the EC2 instance to manage network traffic.</div></div>
+                                <div class="flex items-start"><span class="text-amber-500 mr-2 mt-1">●</span><div><strong class="text-white">Compliance:</strong> `tags` are applied directly to the `aws_instance` to track and manage the resource.</div></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-900 p-6 rounded-lg">
+                            <h3 class="text-xl font-bold text-sky-500 mb-2">Approach 2: ECS Fargate</h3>
+                             <p class="font-semibold text-white mb-4">PaaS (Platform as a Service) - <span class="text-sm font-normal text-slate-400">Recommended</span></p>
+                             <p class="text-slate-400 mb-4">This is the cloud-native, serverless approach. You define the container's requirements, and AWS Fargate manages all the underlying infrastructure. It offers high scalability with significantly less operational overhead.</p>
+                             <div class="space-y-3 text-sm">
+                                <div class="flex items-start"><span class="text-sky-500 mr-2 mt-1">●</span><div><strong class="text-white">Compute:</strong> Serverless. Managed entirely by AWS via the `Fargate` launch type. No VMs to patch or manage.</div></div>
+                                <div class="flex items-start"><span class="text-sky-500 mr-2 mt-1">●</span><div><strong class="text-white">Security:</strong> Granular control via `network_configuration` where security groups are attached directly to the container's network interface.</div></div>
+                                <div class="flex items-start"><span class="text-sky-500 mr-2 mt-1">●</span><div><strong class="text-white">Compliance:</strong> `tags` are applied to higher-level resources like `aws_ecs_service` and `aws_ecs_task_definition` for detailed tracking.</div></div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </section>
+        </main>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const navButtons = document.querySelectorAll('.nav-button');
+            const pages = document.querySelectorAll('.page-content');
+            const detailToggles = document.querySelectorAll('.details-toggle');
+            const copyButton = document.getElementById('copy-button');
+            const codeContent = document.getElementById('code-content');
+
+            navButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const targetId = button.dataset.target;
+
+                    navButtons.forEach(btn => btn.classList.remove('active'));
+                    button.classList.add('active');
+
+                    pages.forEach(page => {
+                        if (page.id === targetId) {
+                            page.classList.remove('hidden');
+                        } else {
+                            page.classList.add('hidden');
+                        }
+                    });
+                });
+            });
+
+            detailToggles.forEach(toggle => {
+                toggle.addEventListener('click', () => {
+                    const content = toggle.nextElementSibling;
+                    content.classList.toggle('open');
+                    const dot = toggle.parentElement.parentElement.querySelector('.timeline-dot');
+                    dot.classList.toggle('bg-amber-900');
+                    dot.classList.toggle('border-amber-500');
+                });
+            });
+            
+            copyButton.addEventListener('click', () => {
+                const code = codeContent.innerText;
+                const textarea = document.createElement('textarea');
+                textarea.value = code;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    copyButton.innerText = 'Copied!';
+                    setTimeout(() => {
+                        copyButton.innerText = 'Copy';
+                    }, 2000);
+                } catch (err) {
+                    console.error('Failed to copy text: ', err);
+                    copyButton.innerText = 'Error';
+                     setTimeout(() => {
+                        copyButton.innerText = 'Copy';
+                    }, 2000);
+                }
+                document.body.removeChild(textarea);
+            });
+        });
+    </script>
+</body>
+</html>
+
